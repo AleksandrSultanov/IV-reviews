@@ -12,52 +12,72 @@ class Reviews
         $this->connection = $connection;
     }
 
+    /**
+     * @throws StoreException
+     */
     function findById(int $id): ?Review {
-        $result = $this->connection->query("SELECT * FROM reviews WHERE id="."$id");
+        $statement = $this->connection->prepare("SELECT * FROM reviews WHERE id = :id;");
+        $statement->bindValue(':id', $id);
+        $result = $statement->execute();
         $reviewInfo = $result->fetchArray();
-        return new Review(
-            $reviewInfo["id"],
-            $reviewInfo["name_creator"],
-            $reviewInfo["date_create"],
-            $reviewInfo["content"]
-        );
+        if($reviewInfo) {
+            return new Review(
+                $reviewInfo["id"],
+                $reviewInfo["name_creator"],
+                $reviewInfo["date_create"],
+                $reviewInfo["content"]
+            );
+        }
+        else return null;
     }
 
     /**
-     * @return Review[]
+     * @param int $page
+     * @return array|null
      */
-    function find(int $page): array
-    {
-        // Запрашиваем определенное количетсво записей
-        $result = $this->connection->query("SELECT id, name_creator, date_create, content FROM reviews LIMIT 20 OFFSET "."$page-1");
-        // Создаем массив Review
-        $reviews = array();
-        $i = 0;
-        while ($reviewInfo = $result->fetchArray()) {
-                $reviews[$i] = new Review(
+    function find(int $page): ?array {
+        // Запрашиваем определенное количество записей
+        $statement = $this->connection->prepare("SELECT * FROM reviews LIMIT :page,20");
+        $statement->bindValue(':page', $page);
+        $result = $statement->execute();
+        if($result) {
+            $reviews = array();
+
+            // Создаем массив Review
+            while ($reviewInfo = $result->fetchArray(SQLITE3_ASSOC)) {
+                $reviews[] = new Review(
                     $reviewInfo["id"],
                     $reviewInfo["name_creator"],
                     $reviewInfo["date_create"],
                     $reviewInfo["content"]
                 );
-                $i++;
-
+            }
+            return $reviews;
         }
-        return $reviews;
+        else return null;
     }
 
-    function addReview (Review $review): void{
-        $result = $this->connection->query("INSERT INTO reviews (name_creator, date_create, content) VALUES ('$review->name_creator','$review->date_create','$review->content')");
-        $arr = $this->connection->query("SELECT last_insert_rowid();");
-        $row = $arr->fetchArray(SQLITE3_ASSOC);
-        var_dump($row);
+    function addReview (Review $review): bool {
+        $statement = $this->connection->prepare("INSERT INTO reviews (name_creator, date_create, content) VALUES (:name_creator, :date_create, :content);");
+        $statement->bindValue(':name_creator', $review->name_creator);
+        $statement->bindValue(':date_create', $review->date_create);
+        $statement->bindValue(':content', $review->content);
+        $result = $statement->execute();
+        $reviewInfo = $result->fetchArray();
+        if($reviewInfo)
+            return true;
+        else return false;
     }
 
     function deleteReview(int $id): Review|bool {
-        $result = $this->connection->query("SELECT * FROM reviews WHERE id="."$id");
+        $statement = $this->connection->prepare("SELECT * FROM reviews WHERE id = :id;");
+        $statement->bindValue(':id', $id);
+        $result = $statement->execute();
         $reviewInfo = $result->fetchArray();
-        $result = $this->connection->query("DELETE FROM reviews WHERE id="."$id");
-        if ($result)
+        $statement = $this->connection->prepare("DELETE FROM reviews WHERE id="."$id");
+        $statement->bindValue(':id', $id);
+        $result = $statement->execute();
+        if ($reviewInfo)
             return new Review(
                 $reviewInfo["id"],
                 $reviewInfo["name_creator"],

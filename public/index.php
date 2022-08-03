@@ -3,8 +3,9 @@
 use Intervolga\Reviews\api\Controller;
 use Intervolga\Reviews\store\Reviews;
 use Slim\Factory\AppFactory;
-require_once dirname(__DIR__, 1)."/config/config.php";
-include_once dirname(__DIR__, 1)."/vendor/autoload.php";
+
+require_once dirname(__DIR__)."/config/config.php";
+include_once dirname(__DIR__)."/vendor/autoload.php";
 
 $app = AppFactory::create();
 
@@ -23,9 +24,9 @@ try {$reviews = new SimpleXMLElement($xmlStr);
 } catch (Exception $e) {}
 
 $app->get('/api/feedbacks/{id}', array($controller, 'showOne'));
-$app->get('/api/feedbacks/', array($controller, 'showAjax'));
 $app->get('/api/feedbacks/page/{page}', array($controller, 'show'));
 $app->get('/api/feedbacks/delete/{id}', array($controller, 'deleteReview'));
-$app->post('/api/feedbacks/addAjax', array($controller, 'addReview'));
+$app->get('/api/feedbacks/', array($controller, 'showAjax'));
 $app->get('/api/feedbacks/add/', array($controller, 'addAjax'));
+$app->post('/api/feedbacks/addAjax', array($controller, 'addReview'));
 $app->run();
